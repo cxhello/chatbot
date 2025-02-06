@@ -3,6 +3,7 @@ import axios, { AxiosError } from 'axios';
 export interface ChatMessage {
   role: 'user' | 'assistant';
   content: string;
+  reasoning_content?: string;
 }
 
 export async function createChatCompletion(messages: ChatMessage[], model: string) {

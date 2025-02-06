@@ -3,6 +3,7 @@ export interface Message {
   role: 'user' | 'assistant';
   content: string;
   timestamp: number;
+  reasoning_content?: string;
 }
 
 export interface Chat {
@@ -17,6 +18,8 @@ export interface Chat {
 
 export const AVAILABLE_MODELS = {
   'deepseek-chat': 'DeepSeek-V3',
+  'deepseek-reasoner': 'DeepSeek-R1',
+  'siliconflow-reasoner': 'SiliconFlow-DeepSeek-R1',
   // 'deepseek-coder': '敬请期待...',  // 注释掉暂未开放的模型
 } as const;
 

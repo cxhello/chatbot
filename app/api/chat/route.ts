@@ -1,10 +1,18 @@
 import { NextResponse } from 'next/server';
 import axios from 'axios';
 
-const api = axios.create({
+const deepseekApi = axios.create({
   baseURL: 'https://api.deepseek.com/v1',
   headers: {
     'Authorization': `Bearer ${process.env.DEEPSEEK_API_KEY}`,
+    'Content-Type': 'application/json',
+  },
+});
+
+const siliconflowApi = axios.create({
+  baseURL: 'https://api.siliconflow.cn/v1',
+  headers: {
+    'Authorization': `Bearer ${process.env.SILICONFLOW_API_KEY}`,
     'Content-Type': 'application/json',
   },
 });
@@ -13,28 +21,69 @@ export async function POST(request: Request) {
   try {
     const { messages, model } = await request.json();
     
-    if (!process.env.DEEPSEEK_API_KEY) {
-      throw new Error('DeepSeek API key is not configured');
-    }
-
-    console.log('API Request:', {
-      model,
-      messages,
-      apiKey: process.env.DEEPSEEK_API_KEY?.slice(0, 8) + '...'
-    });
-
-    const response = await api.post('/chat/completions', {
-      model: 'deepseek-chat',  // 暂时硬编码模型名称
+    let api = deepseekApi;
+    let requestBody: any = {
       messages,
       temperature: 0.7,
       max_tokens: 2000,
-    });
+    };
 
-    if (!response.data?.choices?.[0]?.message) {
-      throw new Error('Invalid response from DeepSeek API');
+    if (model === 'siliconflow-reasoner') {
+      if (!process.env.SILICONFLOW_API_KEY) {
+        throw new Error('SiliconFlow API key is not configured');
+      }
+      api = siliconflowApi;
+      requestBody = {
+        ...requestBody,
+        model: 'deepseek-ai/DeepSeek-R1'
+      };
+    } else {
+      if (!process.env.DEEPSEEK_API_KEY) {
+        throw new Error('DeepSeek API key is not configured');
+      }
+      // DeepSeek API 的特殊处理
+      if (model === 'deepseek-chat') {
+        requestBody = {
+          ...requestBody,
+          model: 'deepseek-chat',
+          messages: messages.map((msg: any) => ({
+            role: msg.role,
+            content: msg.content
+          }))
+        };
+      } else if (model === 'deepseek-reasoner') {
+        requestBody = {
+          ...requestBody,
+          model: 'deepseek-reasoner',
+          messages: messages.map((msg: any) => ({
+            role: msg.role === 'user' ? 'user' : 'assistant',
+            content: msg.content
+          }))
+        };
+      }
     }
 
-    return NextResponse.json(response.data.choices[0].message);
+    console.log('API Request:', {
+      endpoint: api.defaults.baseURL,
+      model: requestBody.model,
+      messageCount: requestBody.messages.length
+    });
+
+    const response = await api.post('/chat/completions', requestBody);
+
+    if (!response.data?.choices?.[0]?.message) {
+      throw new Error('Invalid response from API');
+    }
+
+    const message = response.data.choices[0].message;
+    const reasoning = response.data.choices[0].reasoning_content;
+
+    if (reasoning) {
+      console.log('Reasoning Content:', reasoning);
+      message.reasoning_content = reasoning;
+    }
+
+    return NextResponse.json(message);
   } catch (error) {
     console.error('API Error Details:', {
       name: error.name,

@@ -50,7 +50,8 @@ export const useChatStore = create<ChatStore>((set, get) => ({
       const assistantMessage = await addMessageToChat(chat.id, {
         role: 'assistant',
         content: aiResponse.content,
-        timestamp: Date.now()
+        timestamp: Date.now(),
+        ...(aiResponse.reasoning_content ? { reasoning_content: aiResponse.reasoning_content } : {})
       });
 
       // 更新状态，包括AI的响应消息
@@ -62,7 +63,8 @@ export const useChatStore = create<ChatStore>((set, get) => ({
             id: assistantMessage.id,
             role: 'assistant',
             content: aiResponse.content,
-            timestamp: Date.now()
+            timestamp: Date.now(),
+            ...(aiResponse.reasoning_content ? { reasoning_content: aiResponse.reasoning_content } : {})
           }
         ]
       };
@@ -108,7 +110,8 @@ export const useChatStore = create<ChatStore>((set, get) => ({
       const assistantMessage = await addMessageToChat(currentChat.id, {
         role: 'assistant',
         content: aiResponse.content,
-        timestamp: Date.now()
+        timestamp: Date.now(),
+        ...(aiResponse.reasoning_content ? { reasoning_content: aiResponse.reasoning_content } : {})
       });
 
       // 更新状态

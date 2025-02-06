@@ -2,7 +2,7 @@ import { db } from './firebase';
 import { collection, addDoc, query, where, getDocs, deleteDoc, doc, updateDoc, orderBy, arrayUnion } from 'firebase/firestore';
 import { Chat, Message } from '@/types/chat';
 
-export async function createChat(userId: string, firstMessage: string) {
+export async function createChat(userId: string, firstMessage: string, model: string) {
   try {
     console.log('Creating chat for user:', userId);
     const chat: Omit<Chat, 'id'> = {
@@ -15,7 +15,8 @@ export async function createChat(userId: string, firstMessage: string) {
       }],
       createdAt: Date.now(),
       updatedAt: Date.now(),
-      userId
+      userId,
+      model
     };
 
     console.log('Chat object:', chat);
@@ -49,7 +50,13 @@ export async function getUserChats(userId: string) {
 export async function addMessageToChat(chatId: string, message: Omit<Message, 'id'>) {
   try {
     const chatRef = doc(db, 'chats', chatId);
-    const newMessage = { ...message, id: Date.now().toString() };
+    const newMessage = {
+      id: Date.now().toString(),
+      role: message.role,
+      content: message.content,
+      timestamp: message.timestamp,
+      ...(message.reasoning_content ? { reasoning_content: message.reasoning_content } : {})
+    };
     
     await updateDoc(chatRef, {
       messages: arrayUnion(newMessage),
